@@ -44,15 +44,25 @@
   const PREMIUM_URL = ""; // 販売ページ(ブログ)のURL。決まったらここに設定
 
   // 会員コード(一度入力すればずっと有効)。
-  // お知らせシートに「コード」行があればそちらが優先される(アプリ再公開なしで差し替え可能)。
-  // 解約者を締め出したくなったらシートのコードを新しくして、購読者に新コードを配信する。
-  const VALID_CODES = ["MIZUHIBIKI"];
-  let sheetCodes = null; // お知らせから読み込んだ有効コード
-  function validCodes() {
-    return sheetCodes || state.cachedCodes || VALID_CODES;
+  // ソースコードから読み取られないよう、埋め込み分はハッシュで保持する。
+  // お知らせシートに「コード」行があればそちらも有効(アプリ再公開なしで追加・差し替え可能)。
+  function codeHash(s) {
+    let h = 2166136261;
+    s = (s || "").trim().toUpperCase();
+    for (let i = 0; i < s.length; i++) { h = (h ^ s.charCodeAt(i)) >>> 0; h = (h * 16777619) >>> 0; }
+    return h.toString(36);
+  }
+  const VALID_CODE_HASHES = ["biac7s"];
+  let sheetCodes = null; // お知らせから読み込んだ有効コード(平文)
+  function isValidCode(v) {
+    v = (v || "").trim().toUpperCase();
+    if (!v) return false;
+    if (VALID_CODE_HASHES.includes(codeHash(v))) return true;
+    const sc = sheetCodes || state.cachedCodes || [];
+    return sc.includes(v);
   }
   function isPremium() {
-    return validCodes().includes((state.premiumCode || "").trim().toUpperCase());
+    return isValidCode(state.premiumCode);
   }
 
   // ---------- お知らせ ----------
@@ -775,7 +785,7 @@
       <p id="pmMsg" class="note"></p>`;
     el.querySelector("#pmUnlock").addEventListener("click", () => {
       const v = el.querySelector("#pmCode").value.trim().toUpperCase();
-      if (validCodes().includes(v)) {
+      if (isValidCode(v)) {
         state.premiumCode = v;
         refresh();
       } else {
