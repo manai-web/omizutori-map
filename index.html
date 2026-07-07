@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#faf6ec">
+<meta name="description" content="九星気学の方位と全国の御神水スポットで、いつ・どこへお水取りに行くかがわかるアプリ">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="お水取りマップ">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>全国お水取りマップ</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="appHeader">
+  <button id="menuBtn" aria-label="メニュー">☰</button>
+  <h1>全国お水取りマップ</h1>
+  <button id="locateBtn" aria-label="現在地">◎</button>
+</header>
+
+<div id="map"></div>
+<div id="crosshair" aria-hidden="true">＋</div>
+
+<div id="banBar">
+  <div id="dateNav">
+    <button id="dnToday">今日</button>
+    <button id="dnPrevY">«年</button>
+    <button id="dnPrevM">‹月</button>
+    <button id="dnPrevD">‹日</button>
+    <input type="date" id="datePick">
+    <button id="dnNextD">日›</button>
+    <button id="dnNextM">月›</button>
+    <button id="dnNextY">年»</button>
+    <button id="banToggle" aria-label="盤の表示切替">▾</button>
+  </div>
+  <div id="miniBans">
+    <div class="mini-ban" data-kind="year"><div class="mini-svg"></div><span>年盤</span></div>
+    <div class="mini-ban" data-kind="month"><div class="mini-svg"></div><span>月盤</span></div>
+    <div class="mini-ban" data-kind="day"><div class="mini-svg"></div><span>日盤</span></div>
+    <button id="banDetailBtn">盤の<br>詳細</button>
+  </div>
+</div>
+
+<div id="infoBar">
+  <span id="infoBase">自宅未設定</span>
+  <span id="infoCenter"></span>
+</div>
+
+<div id="banner" class="hidden">
+  <p>まずメニュー(☰)から<strong>自宅（基点）</strong>を設定してください。</p>
+</div>
+
+<aside id="panel" class="hidden">
+  <div class="panel-header">
+    <h2>メニュー</h2>
+    <button id="closePanel" aria-label="閉じる">×</button>
+  </div>
+
+  <section class="panel-section">
+    <h3>お知らせ</h3>
+    <div id="announceBox"></div>
+  </section>
+
+  <section class="panel-section premium-section">
+    <h3>今月のあなたのテーマ</h3>
+    <div id="themeCard"></div>
+  </section>
+
+  <section class="panel-section premium-section">
+    <h3>今月のお水取り推奨日</h3>
+    <div id="recDays"></div>
+  </section>
+
+  <section class="panel-section">
+    <h3>プレミアム（月額880円）</h3>
+    <div id="premiumBox"></div>
+  </section>
+
+  <section class="panel-section">
+    <h3>地点検索</h3>
+    <p id="homeStatus" class="note"></p>
+    <div class="base-add">
+      <input id="baseAddr" type="text" placeholder="場所・住所で検索">
+      <button id="baseSearchBtn">検索</button>
+      <ul id="baseCandidates"></ul>
+      <div class="base-add-row">
+        <button id="gotoGpsBtn">現在地に戻る</button>
+      </div>
+    </div>
+    <p class="note">地図をタップすると赤いピンが立ち、「ここにピンを置く」「ここを自宅にする」を選べます。置いたピン(青色)をタップすると自宅からの距離・方位と年盤・月盤・日盤の吉凶が確認でき、「ピンを外す」で削除できます。自宅設定後は検索地点・ピンまでのリード線を表示します。</p>
+  </section>
+
+  <section class="panel-section">
+    <h3>人物（生年月日）</h3>
+    <ul id="personList"></ul>
+    <div class="base-add">
+      <input id="personName" type="text" placeholder="名前（例: 自分）">
+      <input type="date" id="personBirth">
+      <select id="personGender">
+        <option value="">性別: 未設定</option>
+        <option value="female">性別: 女性</option>
+        <option value="male">性別: 男性</option>
+      </select>
+      <button id="personAddBtn">人物を追加</button>
+    </div>
+    <p class="note">吉方位は選択中の人物の本命星・月命星で判定します。性別は本命星と月命星が同じ五黄土星の場合のみ使用します。</p>
+  </section>
+
+  <section class="panel-section">
+    <h3>方位の設定</h3>
+    <label class="setting-row">方位区分
+      <select id="sectorMode">
+        <option value="kigaku">気学式（30°/60°）</option>
+        <option value="equal">均等（45°）</option>
+      </select>
+    </label>
+    <label class="setting-row">北の基準
+      <select id="northMode">
+        <option value="mag">磁北（偏角補正あり）</option>
+        <option value="true">真北</option>
+      </select>
+    </label>
+    <p id="declInfo" class="note"></p>
+  </section>
+
+  <section class="panel-section">
+    <h3>お水取りスポット一覧（近い順）</h3>
+    <label class="setting-row"><span>吉方位のスポットのみ表示</span>
+      <input type="checkbox" id="kichiOnly">
+    </label>
+    <ul id="spotList"></ul>
+  </section>
+
+  <section class="panel-section">
+    <h3>このアプリについて</h3>
+    <details class="about-details">
+      <summary>利用規約・免責事項</summary>
+      <div class="note">
+        ・本アプリは九星気学に基づく方位・暦の情報を提供するものであり、開運効果・運勢を保証するものではありません。最終的な判断はご自身の責任で行ってください。<br>
+        ・お水取りスポットの情報（初穂料・提供時間・水質等）は変更される場合があります。参拝の際は各神社のルールとマナーを守り、飲用の可否は現地の案内に従ってください。<br>
+        ・テーマ音源は購入者ご本人の利用に限ります。複製・再配布・会員コードの共有はご遠慮ください。<br>
+        ・本アプリの利用により生じたいかなる損害についても、運営者は責任を負いかねます。
+      </div>
+    </details>
+    <details class="about-details">
+      <summary>プライバシーポリシー</summary>
+      <div class="note">
+        ・生年月日・自宅の位置・ピン・会員コードなどの情報は、すべてお使いの端末内（ブラウザのlocalStorage）にのみ保存され、外部のサーバーへ送信されることはありません。<br>
+        ・現在地の取得は、ボタンを押したときにのみ行われ、記録・送信されません。<br>
+        ・住所検索には国土地理院のジオコーディングAPIを利用します（検索した文字列が同APIに送信されます）。
+      </div>
+    </details>
+    <details class="about-details">
+      <summary>出典・クレジット</summary>
+      <div class="note">
+        地図タイル: 国土地理院 / © OpenStreetMap contributors<br>
+        磁気偏角: 国土地理院 磁気図2020.0年値の近似式による<br>
+        地図ライブラリ: Leaflet
+      </div>
+    </details>
+  </section>
+</aside>
+<div id="panelOverlay" class="hidden"></div>
+
+<div id="onboard" class="hidden">
+  <div class="onboard-box">
+    <img src="icon-192.png" alt="" width="72" height="72">
+    <h2>全国お水取りマップへようこそ</h2>
+    <p>九星気学の方位と全国の御神水スポットで、<br>「いつ・どこへ」お水取りに行くかがわかるアプリです。</p>
+    <ol>
+      <li>メニュー(☰)の「人物」で<strong>生年月日</strong>を登録</li>
+      <li>地図をタップ、または検索して<strong>「ここを自宅にする」</strong></li>
+      <li>下の盤で吉方位を確認。プレミアムなら推奨日・スポット・テーマ音源も</li>
+    </ol>
+    <button id="onboardStart">はじめる</button>
+  </div>
+</div>
+
+<div id="banModal" class="hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span id="modalDate"></span>
+      <button id="modalClose" aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-tabs">
+      <button data-kind="year">年盤</button>
+      <button data-kind="month">月盤</button>
+      <button data-kind="day">日盤</button>
+    </div>
+    <div id="modalPerson" class="note"></div>
+    <div id="modalSvg"></div>
+    <div class="modal-legend">
+      <span class="lg lg-max">最大吉方</span>
+      <span class="lg lg-kichi">吉方（生気・比和・退気）</span>
+      <span class="lg lg-kyo">凶方位</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="js/data.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/koyomi.js"></script>
+<script src="js/kigaku.js"></script>
+<script src="js/ban.js"></script>
+<script src="js/themes.js"></script>
+<script src="js/app.js"></script>
+<script>
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+</body>
+</html>
