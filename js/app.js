@@ -66,9 +66,13 @@
   }
 
   // ---------- お知らせ ----------
-  // 運用時はGoogleスプレッドシート(ファイル>共有>ウェブに公開>CSV)のURLに差し替える。
+  // Googleスプレッドシート「お水取りマップ_お知らせ配信」から取得(要: リンク共有=閲覧者)。
+  // 取得できないときはアプリ内蔵のannounce.csvにフォールバック。
   // シートの列: 日付, 種別(全員/会員/コード), タイトル, 本文
-  const ANNOUNCE_URL = "announce.csv";
+  const ANNOUNCE_URLS = [
+    "https://docs.google.com/spreadsheets/d/1w9rW6Vhc9yZOmrXz4osjJl_Ag40ZC9zAivZXOaf_2eA/gviz/tq?tqx=out:csv",
+    "announce.csv"
+  ];
   let announceRows = null;
 
   function parseCsv(text) {
@@ -91,11 +95,19 @@
     return rows;
   }
 
+  async function fetchFirst(urls) {
+    for (const u of urls) {
+      try {
+        const res = await fetch(u, { cache: "no-store" });
+        if (res.ok) return await res.text();
+      } catch { /* 次の候補へ */ }
+    }
+    throw new Error("no source");
+  }
+
   async function loadAnnounce() {
     try {
-      const res = await fetch(ANNOUNCE_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error();
-      const rows = parseCsv(await res.text());
+      const rows = parseCsv(await fetchFirst(ANNOUNCE_URLS));
       const list = [];
       const codes = [];
       for (const r of rows.slice(1)) {
