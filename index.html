@@ -152,7 +152,8 @@
       <div class="note">
         ・生年月日・自宅の位置・ピン・会員コードなどの情報は、すべてお使いの端末内（ブラウザのlocalStorage）にのみ保存され、外部のサーバーへ送信されることはありません。<br>
         ・現在地の取得は、ボタンを押したときにのみ行われ、記録・送信されません。<br>
-        ・住所検索には国土地理院のジオコーディングAPIを利用します（検索した文字列が同APIに送信されます）。
+        ・住所検索には国土地理院のジオコーディングAPIを利用します（検索した文字列が同APIに送信されます）。<br>
+        ・アクセス数の把握のため、Cookieを使わない匿名アクセス解析（GoatCounter）を利用しています。閲覧ページ・地域・ブラウザ種別などの統計情報のみが集計され、個人を特定する情報や、生年月日・自宅位置などの入力内容は一切収集されません。
       </div>
     </details>
     <details class="about-details">
@@ -216,5 +217,8 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("sw.js");
 }
 </script>
+<!-- アクセス解析(GoatCounter): Cookie不使用・匿名。goatcounter.comで「omizutori」のコード名で登録すると有効になる。
+     別のコード名で登録した場合は下のURLの omizutori 部分を変更すること。localhostではカウントされない。 -->
+<script data-goatcounter="https://omizutori.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
