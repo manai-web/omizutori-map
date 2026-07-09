@@ -1,5 +1,5 @@
 // 全国お水取りマップ Service Worker
-const CACHE = "omizu-v1";
+const CACHE = "omizu-v2";
 const CORE = [
   "./",
   "index.html",
