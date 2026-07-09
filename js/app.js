@@ -15,8 +15,8 @@
     date: todayISO(),
     pins: [],               // ユーザーが置いたピン {id, name, lat, lng}
     premiumCode: "",        // 月替わりの合言葉(当月分と一致すれば有料機能が解錠)
-    people: [{ id: "p1", name: "え", birth: "1984-03-03", gender: "" }],
-    activePersonId: "p1",
+    people: [],          // 初期状態では誰も登録されていない(利用者が自分で追加する)
+    activePersonId: null,
     banFocus: "day",        // 地図の色分けに使う盤
     banCollapsed: false
   }, loadState());
