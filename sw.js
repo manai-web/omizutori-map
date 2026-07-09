@@ -1,5 +1,5 @@
 // 全国お水取りマップ Service Worker
-const CACHE = "omizu-v2";
+const CACHE = "omizu-v3";
 const CORE = [
   "./",
   "index.html",
@@ -30,6 +30,18 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET") return;
+
+  // ページ本体はネットワーク優先(更新が即反映される)。オフライン時のみキャッシュ
+  if (e.request.mode === "navigate") {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return res;
+      }).catch(() => caches.match(e.request).then(hit => hit || caches.match("index.html")))
+    );
+    return;
+  }
 
   // お知らせ(と将来のシートCSV)は常に最新を優先、オフライン時のみキャッシュ
   if (url.pathname.endsWith("announce.csv") || url.hostname.includes("docs.google.com")) {
